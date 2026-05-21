@@ -25,7 +25,7 @@ async function findChampion(input, version) {
   );
 }
 
-const BUILD_PROMPT = `Du bist ein League of Legends Meta-Experte. Gib einen aktuellen Meta-Build für den genannten Champion zurück.
+const BUILD_PROMPT = `Du bist ein League of Legends Meta-Experte. Gib einen aktuellen Meta-Build für den genannten Champion zurück. Nutze dafür immer den meistgebauten Gegenstand
 
 Antworte NUR mit einem JSON-Objekt in diesem Format, keine Erklärungen davor oder danach:
 {
@@ -39,12 +39,12 @@ Antworte NUR mit einem JSON-Objekt in diesem Format, keine Erklärungen davor od
   "core": ["Luden's Tempest", "Shadowflame", "Rabadon's Deathcap"],
   "skill_order": "Max Q > E > W",
   "first_skill": "Q",
-  "tip": "Kurzer Teemo-Tipp zum Spielen (1 Satz, auf Deutsch, in Teemo-Sprache)"
+  "tip": "Kurzer Teemo-Tipp zum Spielen (1 Satz, auf Deutsch, in Sovjet-Teemo-Sprache)"
 }`;
 
 export const data = new SlashCommandBuilder()
   .setName("build")
-  .setDescription("🍄 Meta-Build für jeden Champion – von Teemo persönlich erklärt")
+  .setDescription("Meta-Build für jeden Champion – von Teemoshenko persönlich erklärt")
   .addStringOption((opt) =>
     opt.setName("champion").setDescription("Champion-Name (Englisch)").setRequired(true)
   )
@@ -102,7 +102,7 @@ export async function execute(interaction) {
 
     const embed = new EmbedBuilder()
       .setColor(0x78b159)
-      .setTitle(`🍄 ${champion.name} – ${build.role} Meta Build`)
+      .setTitle(`${champion.name} – ${build.role} Meta Build`)
       .setThumbnail(iconUrl)
       .addFields(
         { name: "⚡ Summoner Spells", value: build.summoner_spells?.join(" + ") ?? "–", inline: true },
