@@ -21,7 +21,7 @@ A hobby Discord bot built with discord.js v14 and Google Gemini AI. Features an 
 |---|---|
 | `/teemo chat <message>` | Chat with Genosse Teemoshenko |
 | `/teemo vergessen` | Resets the conversation history |
-| `/build <champion> [lane]` | AI-generated meta build for any champion (op.gg api) |
+| `/build <champion> [rank]` | AI-generated meta build for any champion (op.gg api) |
 | `/ping` | Shows bot latency |
 | `/info server` | Server information |
 | `/info user [@user]` | User information |
