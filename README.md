@@ -23,45 +23,6 @@ discord-bot/
 
 ---
 
-## 🚀 Setup
-
-### 1. Dependencies installieren
-```bash
-npm install
-```
-
-### 2. Bot auf Discord erstellen
-1. Gehe zu [discord.com/developers/applications](https://discord.com/developers/applications)
-2. „New Application" → Namen eingeben
-3. Unter **Bot**: „Add Bot" → Token kopieren
-4. Unter **Bot** → Privileged Gateway Intents:
-   - ✅ **Message Content Intent** aktivieren
-5. Unter **OAuth2 → URL Generator**:
-   - Scopes: `bot`, `applications.commands`
-   - Bot Permissions: `Send Messages`, `Read Message History`, `Use Slash Commands`
-   - Link öffnen → Bot zum Server einladen
-
-### 3. .env ausfüllen
-```env
-DISCORD_TOKEN=dein_bot_token_hier
-CLIENT_ID=deine_application_id
-GUILD_ID=deine_server_id
-```
-
-**Tipp:** Server-ID & Application-ID erhältst du per Rechtsklick (Dev-Modus in Discord-Einstellungen aktivieren).
-
-### 4. Slash-Commands registrieren
-```bash
-npm run deploy
-```
-
-### 5. Bot starten
-```bash
-npm start
-```
-
----
-
 ## ⚙️ Neuen Slash-Command hinzufügen
 
 Neue Datei in `commands/` erstellen:
@@ -78,15 +39,13 @@ export async function execute(interaction) {
 }
 ```
 
-Dann `npm run deploy` erneut ausführen – fertig!
-
----
 
 ## 📌 Verfügbare Commands
 
 | Command | Beschreibung |
 |---|---|
 | `/ping` | Bot-Latenz anzeigen |
+| `/build` | op.gg api zugriff |
 | `/info server` | Serverinformationen |
 | `/info user [@user]` | Userinfos |
 | `/würfeln [seiten]` | Zufallswürfel (W6 bis W1000) |
