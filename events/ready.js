@@ -7,8 +7,9 @@ export async function execute(client) {
   console.log(`\n🤖 Bot online als: ${client.user.tag}`);
   console.log(`📡 Verbunden mit ${client.guilds.cache.size} Server(n)\n`);
 
+  await client.user.setUsername("Genosse Teemoshenko").catch(() => {});
   await client.application.edit({
-    description: "Captain Teemo auf dem Posten. Experte für Geopolitik, internationale Konflikte und giftige Pilze. Scout-Ausbildung in Bandle City. Hehehe.",
+    description: "Oberkommissar der Roten Armee. Experte für Geopolitik, marxistische Theorie und kollektive Pilzzucht. Za Rodinu! Hehehe.",
   });
 
   // Status setzen
