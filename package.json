@@ -1,0 +1,17 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot mit Slash-Commands & Events",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js"
+  },
+  "dependencies": {
+    "@google/genai": "^0.7.0",
+    "@google/generative-ai": "^0.24.1",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5"
+  }
+}
