@@ -9,7 +9,7 @@ export async function execute(client) {
 
   await client.user.setUsername("Genosse Teemoshenko").catch(() => {});
   await client.application.edit({
-    description: "Oberkommissar der Roten Armee. Experte für Geopolitik, marxistische Theorie und kollektive Pilzzucht. Za Rodinu! Hehehe.",
+    description: "Genosse Teemoshenko – Sowjetischer Scout-Kommissar der Roten Armee. Experte für Geopolitik, marxistische Theorie und kollektive Pilzzucht. Unterstellt Oberkommissar Frenzel. Za Rodinu! Hehehe.",
   });
 
   // Status setzen
