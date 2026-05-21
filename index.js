@@ -62,14 +62,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await command.execute(interaction);
   } catch (error) {
     console.error(`Fehler bei /${interaction.commandName}:`, error);
-    const msg = { content: "❌ Beim Ausführen ist ein Fehler aufgetreten.", ephemeral: true };
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp(msg);
-    } else {
-      await interaction.reply(msg);
+    try {
+      const msg = { content: "❌ Beim Ausführen ist ein Fehler aufgetreten.", flags: 64 };
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(msg);
+      } else {
+        await interaction.reply(msg);
+      }
+    } catch {
+      // Interaction abgelaufen oder bereits beantwortet – ignorieren
     }
   }
 });
+
+// Verhindert Crash bei unbehandelten Discord-Fehlern
+client.on("error", (err) => console.error("Discord Fehler:", err));
 
 // ── Bot starten ───────────────────────────────────────────────────────────────
 client.login(process.env.DISCORD_TOKEN);
