@@ -1,6 +1,6 @@
 # Genosse Teemoshenko – Discord Bot
 
-A hobby Discord bot built with discord.js v14 and Google Gemini AI. Features an AI-powered chat persona based on Teemo from League of Legends — reimagined as a Soviet commissar with strong geopolitical opinions and a dry sense of humor.
+A hobby Discord bot built with discord.js v14 and Google Gemini AI. Features an AI-powered chat persona based on Teemo from League of Legends
 
 ---
 
@@ -21,7 +21,7 @@ A hobby Discord bot built with discord.js v14 and Google Gemini AI. Features an 
 |---|---|
 | `/teemo chat <message>` | Chat with Genosse Teemoshenko |
 | `/teemo vergessen` | Resets the conversation history |
-| `/build <champion> [lane]` | AI-generated meta build for any champion |
+| `/build <champion> [lane]` | AI-generated meta build for any champion (op.gg api) |
 | `/ping` | Shows bot latency |
 | `/info server` | Server information |
 | `/info user [@user]` | User information |
@@ -64,4 +64,3 @@ A hobby Discord bot built with discord.js v14 and Google Gemini AI. Features an 
 
 ---
 
-*Personal hobby project. Not affiliated with Riot Games or Google.*
