@@ -1,53 +1,67 @@
-# 🤖 Discord Bot (discord.js v14)
+# Genosse Teemoshenko – Discord Bot
 
-Ein vollständiger Discord-Bot mit **Slash-Commands** und **Nachrichten-Events**.
-
----
-
-## 📁 Projektstruktur
-
-```
-discord-bot/
-├── commands/
-│   ├── ping.js        → /ping        – Bot-Latenz anzeigen
-│   ├── info.js        → /info        – Server- & Userinfos
-│   └── würfeln.js     → /würfeln     – Zufallswürfel
-├── events/
-│   ├── ready.js       → Bot-Start-Event
-│   └── messageCreate.js → Nachrichten-Handler
-├── index.js           → Einstiegspunkt
-├── deploy-commands.js → Slash-Commands registrieren
-├── .env               → Tokens & IDs (NIEMALS committen!)
-└── package.json
-```
+A hobby Discord bot built with discord.js v14 and Google Gemini AI. Features an AI-powered chat persona based on Teemo from League of Legends — reimagined as a Soviet commissar with strong geopolitical opinions and a dry sense of humor.
 
 ---
 
-## ⚙️ Neuen Slash-Command hinzufügen
+## Features
 
-Neue Datei in `commands/` erstellen:
+- **AI Chat** – Talk to Genosse Teemoshenko via slash command or @mention. Powered by Gemini 2.5 Flash.
+- **Persistent Conversation History** – The bot remembers context per user within a session.
+- **Champion Build Advisor** – Get AI-generated meta builds for any LoL champion.
+- **Custom User Personalities** – Specific users get tailored responses (roasts or respect).
+- **Keyword Reactions** – Reacts to messages containing certain words.
+- **Prefix Commands** – Basic `!hilfe` and `!wiederhole` commands.
 
-```js
-import { SlashCommandBuilder } from "discord.js";
+---
 
-export const data = new SlashCommandBuilder()
-  .setName("meincommand")
-  .setDescription("Beschreibung hier");
+## Commands
 
-export async function execute(interaction) {
-  await interaction.reply("Hallo von meinem Command!");
-}
-```
-
-
-## 📌 Verfügbare Commands
-
-| Command | Beschreibung |
+| Command | Description |
 |---|---|
-| `/ping` | Bot-Latenz anzeigen |
-| `/build` | op.gg api zugriff |
-| `/info server` | Serverinformationen |
-| `/info user [@user]` | Userinfos |
-| `/würfeln [seiten]` | Zufallswürfel (W6 bis W1000) |
-| `!hilfe` | Prefix-Command-Übersicht |
-| `!wiederhole <text>` | Text wiederholen |
+| `/teemo chat <message>` | Chat with Genosse Teemoshenko |
+| `/teemo vergessen` | Resets the conversation history |
+| `/build <champion> [lane]` | AI-generated meta build for any champion |
+| `/ping` | Shows bot latency |
+| `/info server` | Server information |
+| `/info user [@user]` | User information |
+| `/würfeln [sides]` | Roll a dice (d6 to d1000) |
+| `!hilfe` | Prefix command overview |
+| `!wiederhole <text>` | Repeats your text |
+
+---
+
+## Setup
+
+1. Clone the repo
+2. Install dependencies:
+   ```
+   npm install
+   ```
+3. Create a `.env` file:
+   ```
+   DISCORD_TOKEN=your_token
+   CLIENT_ID=your_client_id
+   GUILD_ID=your_guild_id
+   GEMINI_API_KEY=your_gemini_key
+   ```
+4. Register slash commands:
+   ```
+   node deploy-commands.js
+   ```
+5. Start the bot:
+   ```
+   node index.js
+   ```
+
+---
+
+## Stack
+
+- [discord.js v14](https://discord.js.org)
+- [Google Gemini API (@google/genai)](https://ai.google.dev)
+- [dotenv](https://github.com/motdotla/dotenv)
+
+---
+
+*Personal hobby project. Not affiliated with Riot Games or Google.*
