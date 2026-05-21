@@ -1,6 +1,6 @@
 # Genosse Teemoshenko – Discord Bot
 
-A hobby Discord bot built with discord.js v14 and Google Gemini AI. Features an AI-powered chat persona based on Teemo from League of Legends
+A joke Discord bot built with discord.js v14 and Google Gemini AI. Features an AI-powered chat persona based on Teemo from League of Legends
 
 ---
 
