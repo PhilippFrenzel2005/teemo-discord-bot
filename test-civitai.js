@@ -69,7 +69,8 @@ try {
     await new Promise((r) => setTimeout(r, 4000));
     const status = await civitai.jobs.getByToken(res.token);
     const job = status?.jobs?.[0];
-    const blobUrl = job?.result?.blobUrl;
+    const item = Array.isArray(job?.result) ? job.result[0] : job?.result;
+    const blobUrl = item?.blobUrl;
 
     if (blobUrl) {
       console.log("\n✅ ERFOLG! Bild-URL:", blobUrl);
@@ -77,7 +78,7 @@ try {
       console.log("   " + target);
       process.exit(0);
     }
-    if (job && job.scheduled === false) {
+    if (job && job.scheduled === false && item?.available !== true) {
       console.log("\n❌ Job abgelehnt. Voller Status (enthält den Grund):");
       console.log(JSON.stringify(status, null, 2));
       process.exit(1);

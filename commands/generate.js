@@ -5,7 +5,7 @@ const { Civitai, Scheduler } = pkg;
 const civitai = new Civitai({ auth: process.env.CIVITAI_API_TOKEN });
 
 // Standard-Checkpoint (SDXL). Über die /generate-Option "modell" überschreibbar.
-const DEFAULT_MODEL = "urn:air:sdxl:checkpoint:civitai:101055@128078"; // DreamShaper XL
+const DEFAULT_MODEL = "urn:air:sdxl:checkpoint:civitai:101055@128078"; // SD XL 1.0 (96 Worker, verfügbar)
 
 // SDXL-freundliche Auflösungen pro Seitenverhältnis
 const FORMATS = {
@@ -95,7 +95,9 @@ export async function execute(interaction) {
       return;
     }
 
-    // Selbst pollen: alle 4s, bis zu ~3 Minuten
+    // Selbst pollen: alle 4s, bis zu ~3 Minuten.
+    // Achtung: result ist ein ARRAY ([{ blobKey, available, blobUrl, seed }]).
+    // blobUrl erscheint erst, wenn available === true.
     let blobUrl;
     const maxTries = 45;
     for (let i = 0; i < maxTries; i++) {
@@ -103,12 +105,13 @@ export async function execute(interaction) {
 
       const status = await civitai.jobs.getByToken(token);
       const job = status?.jobs?.[0];
-      blobUrl = job?.result?.blobUrl;
+      const item = Array.isArray(job?.result) ? job.result[0] : job?.result;
+      blobUrl = item?.blobUrl;
 
       if (blobUrl) break;
 
-      // Job fehlgeschlagen: nicht mehr eingeplant und kein Ergebnis
-      if (job && job.scheduled === false) {
+      // Job fehlgeschlagen: nicht mehr eingeplant, kein Ergebnis verfügbar
+      if (job && job.scheduled === false && item?.available !== true) {
         console.error("Civitai Job nicht eingeplant:", JSON.stringify(status));
         await interaction.editReply(
           "❌ Der Job wurde abgelehnt, Genosse. Meist liegt das am Model (nicht für Generierung verfügbar) oder an fehlendem Buzz. Probier ein anderes `modell` oder lade Buzz auf."
