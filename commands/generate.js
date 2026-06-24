@@ -4,8 +4,9 @@ const { Civitai, Scheduler } = pkg;
 
 const civitai = new Civitai({ auth: process.env.CIVITAI_API_TOKEN });
 
-// Standard-Checkpoint (SDXL). Über die /generate-Option "modell" überschreibbar.
-const DEFAULT_MODEL = "urn:air:sdxl:checkpoint:civitai:101055@128078"; // SD XL 1.0 (96 Worker, verfügbar)
+// Standard-Checkpoint: Pony Diffusion XL (122 Worker, top für stylisierte Art).
+// Über die /generate-Option "modell" überschreibbar.
+const DEFAULT_MODEL = "urn:air:sdxl:checkpoint:civitai:257749@290640"; // Pony Diffusion XL
 
 // SDXL-freundliche Auflösungen pro Seitenverhältnis
 const FORMATS = {
@@ -17,6 +18,14 @@ const FORMATS = {
 const DEFAULT_NEGATIVE =
   "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, " +
   "fewer digits, cropped, worst quality, low quality, jpeg artifacts, watermark, blurry";
+
+// Pony-Modelle brauchen die score-Quality-Tags, sonst wird das Bild matschig.
+const PONY_POSITIVE = "score_9, score_8_up, score_7_up, score_6_up, ";
+const PONY_NEGATIVE =
+  "score_6, score_5, score_4, " + DEFAULT_NEGATIVE;
+
+// Pony-Checkpoint erkennen (Model-ID 257749), um Tags automatisch zu setzen.
+const isPony = (model) => model.includes("257749");
 
 export const data = new SlashCommandBuilder()
   .setName("generate")
@@ -60,11 +69,18 @@ export async function execute(interaction) {
 
   await interaction.deferReply();
 
-  const prompt = interaction.options.getString("prompt");
-  const negativePrompt = interaction.options.getString("negativ") ?? DEFAULT_NEGATIVE;
+  const userPrompt = interaction.options.getString("prompt");
+  const userNegative = interaction.options.getString("negativ");
   const formatKey = interaction.options.getString("format") ?? "quadrat";
   const model = interaction.options.getString("modell") ?? DEFAULT_MODEL;
   const { width, height } = FORMATS[formatKey] ?? FORMATS.quadrat;
+
+  // Bei Pony-Modellen die score-Quality-Tags voranstellen und einen
+  // Pony-tauglichen Negative-Prompt nutzen (sofern der User keinen vorgibt).
+  const pony = isPony(model);
+  const prompt = pony ? PONY_POSITIVE + userPrompt : userPrompt;
+  const negativePrompt =
+    userNegative ?? (pony ? PONY_NEGATIVE : DEFAULT_NEGATIVE);
 
   const input = {
     model,
@@ -72,8 +88,8 @@ export async function execute(interaction) {
       prompt,
       negativePrompt,
       scheduler: Scheduler.EULER_A,
-      steps: 25,
-      cfgScale: 7,
+      steps: pony ? 28 : 25,
+      cfgScale: pony ? 6 : 7,
       width,
       height,
       clipSkip: 2,
@@ -133,7 +149,7 @@ export async function execute(interaction) {
         name: "Genosse Teemoshenko – Atelier der Revolution 🍄",
         iconURL: "https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/Teemo.png",
       })
-      .setDescription(`**Auftrag von ${interaction.user.username}:**\n> ${prompt}`)
+      .setDescription(`**Auftrag von ${interaction.user.username}:**\n> ${userPrompt}`)
       .setImage(blobUrl)
       .setFooter({ text: `${width}×${height} • Civitai • Hehehe.` })
       .setTimestamp();
