@@ -9,6 +9,7 @@ A joke Discord bot built with discord.js v14 and Google Gemini AI. Features an A
 - **AI Chat** – Talk to Genosse Teemoshenko via slash command or @mention. Powered by Gemini 2.5 Flash.
 - **Persistent Conversation History** – The bot remembers context per user within a session.
 - **Champion Build Advisor** – Get AI-generated meta builds for any LoL champion.
+- **AI Image Generation** – Generate images via the Civitai API with `/generate`.
 - **Custom User Personalities** – Specific users get tailored responses (roasts or respect).
 - **Keyword Reactions** – Reacts to messages containing certain words.
 - **Prefix Commands** – Basic `!hilfe` and `!wiederhole` commands.
@@ -22,6 +23,7 @@ A joke Discord bot built with discord.js v14 and Google Gemini AI. Features an A
 | `/teemo chat <message>` | Chat with Genosse Teemoshenko |
 | `/teemo vergessen` | Resets the conversation history |
 | `/build <champion> [rank]` | AI-generated meta build for any champion (op.gg api) |
+| `/generate <prompt> [format] [negativ] [modell]` | Generate an image via Civitai AI |
 | `/ping` | Shows bot latency |
 | `/info server` | Server information |
 | `/info user [@user]` | User information |
@@ -44,6 +46,7 @@ A joke Discord bot built with discord.js v14 and Google Gemini AI. Features an A
    CLIENT_ID=your_client_id
    GUILD_ID=your_guild_id
    GEMINI_API_KEY=your_gemini_key
+   CIVITAI_API_TOKEN=your_civitai_token
    ```
 4. Register slash commands:
    ```
@@ -60,6 +63,7 @@ A joke Discord bot built with discord.js v14 and Google Gemini AI. Features an A
 
 - [discord.js v14](https://discord.js.org)
 - [Google Gemini API (@google/genai)](https://ai.google.dev)
+- [Civitai API (civitai)](https://github.com/civitai/civitai-javascript)
 - [dotenv](https://github.com/motdotla/dotenv)
 
 ---
