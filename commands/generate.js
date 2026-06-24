@@ -82,23 +82,44 @@ export async function execute(interaction) {
   };
 
   try {
-    // wait=true → SDK wartet auf die Fertigstellung des Jobs
-    const response = await civitai.image.fromText(input, true);
+    // Job einreichen OHNE auf das SDK-interne Polling zu warten (das pollt nur
+    // alle 30s / 10min und verschluckt Fehler). Wir pollen selbst – schneller
+    // und mit klaren Fehlermeldungen.
+    const response = await civitai.image.fromText(input, false);
+    const token = response?.token;
 
-    let blobUrl = response?.jobs?.[0]?.result?.blobUrl;
+    if (!token) {
+      await interaction.editReply(
+        "❌ Civitai hat keinen Job angenommen, Genosse. (kein Token) – Token/Buzz prüfen."
+      );
+      return;
+    }
 
-    // Fallback: kurz nachpollen, falls das Bild noch nicht bereit ist
-    if (!blobUrl && response?.token) {
-      for (let i = 0; i < 10 && !blobUrl; i++) {
-        await new Promise((r) => setTimeout(r, 3000));
-        const status = await civitai.jobs.getByToken(response.token);
-        blobUrl = status?.jobs?.[0]?.result?.blobUrl;
+    // Selbst pollen: alle 4s, bis zu ~3 Minuten
+    let blobUrl;
+    const maxTries = 45;
+    for (let i = 0; i < maxTries; i++) {
+      await new Promise((r) => setTimeout(r, 4000));
+
+      const status = await civitai.jobs.getByToken(token);
+      const job = status?.jobs?.[0];
+      blobUrl = job?.result?.blobUrl;
+
+      if (blobUrl) break;
+
+      // Job fehlgeschlagen: nicht mehr eingeplant und kein Ergebnis
+      if (job && job.scheduled === false) {
+        console.error("Civitai Job nicht eingeplant:", JSON.stringify(status));
+        await interaction.editReply(
+          "❌ Der Job wurde abgelehnt, Genosse. Meist liegt das am Model (nicht für Generierung verfügbar) oder an fehlendem Buzz. Probier ein anderes `modell` oder lade Buzz auf."
+        );
+        return;
       }
     }
 
     if (!blobUrl) {
       await interaction.editReply(
-        "🍄 Das Bild ist noch in den Pilzwäldern verschollen, Genosse... (kein Ergebnis erhalten). Versuch es erneut."
+        "🍄 Das Bild ist noch in den Pilzwäldern verschollen, Genosse... (Zeitüberschreitung nach 3 Minuten). Versuch es erneut."
       );
       return;
     }
