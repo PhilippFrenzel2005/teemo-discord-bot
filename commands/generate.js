@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } from "discord.js";
 
 // Qwen-Image läuft NICHT über die civitai-SDK (textToImage), sondern über den
 // v2-Workflows-Endpoint der Orchestration-API (imageGen recipe).
@@ -151,11 +151,24 @@ export async function execute(interaction) {
         iconURL: "https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/Teemo.png",
       })
       .setDescription(`**Auftrag von ${interaction.user.username}:**\n> ${prompt}`)
-      .setImage(imageUrl)
       .setFooter({ text: `${width}×${height} • Qwen-Image • Hehehe.` })
       .setTimestamp();
 
-    await interaction.editReply({ embeds: [embed] });
+    // Bild selbst herunterladen und als Datei anhängen – zuverlässiger als
+    // Discord die (signierte, evtl. ablaufende) URL proxen zu lassen.
+    try {
+      const imgRes = await fetch(imageUrl);
+      if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
+      const buffer = Buffer.from(await imgRes.arrayBuffer());
+      const file = new AttachmentBuilder(buffer, { name: "teemo.jpeg" });
+      embed.setImage("attachment://teemo.jpeg");
+      await interaction.editReply({ embeds: [embed], files: [file] });
+    } catch (dlErr) {
+      // Fallback: doch die URL direkt setzen
+      console.error("Bild-Download fehlgeschlagen, nutze URL:", dlErr);
+      embed.setImage(imageUrl);
+      await interaction.editReply({ embeds: [embed] });
+    }
   } catch (err) {
     console.error("Qwen Fehler:", err);
     await interaction.editReply(
