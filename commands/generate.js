@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import { Civitai, Scheduler } from "civitai";
+import pkg from "civitai";
+const { Civitai, Scheduler } = pkg;
 
 const civitai = new Civitai({ auth: process.env.CIVITAI_API_TOKEN });
 
