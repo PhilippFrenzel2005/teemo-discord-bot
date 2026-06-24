@@ -1,14 +1,10 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import pkg from "civitai";
-const { Civitai, Scheduler } = pkg;
 
-const civitai = new Civitai({ auth: process.env.CIVITAI_API_TOKEN });
+// Qwen-Image läuft NICHT über die civitai-SDK (textToImage), sondern über den
+// v2-Workflows-Endpoint der Orchestration-API (imageGen recipe).
+const ORCHESTRATION = "https://orchestration.civitai.com";
 
-// Standard-Checkpoint: Pony Diffusion XL (122 Worker, top für stylisierte Art).
-// Über die /generate-Option "modell" überschreibbar.
-const DEFAULT_MODEL = "urn:air:sdxl:checkpoint:civitai:257749@290640"; // Pony Diffusion XL
-
-// SDXL-freundliche Auflösungen pro Seitenverhältnis
+// Qwen-freundliche Auflösungen pro Seitenverhältnis (teilbar durch 8).
 const FORMATS = {
   quadrat: { width: 1024, height: 1024 },
   hoch: { width: 832, height: 1216 },
@@ -19,21 +15,19 @@ const DEFAULT_NEGATIVE =
   "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, " +
   "fewer digits, cropped, worst quality, low quality, jpeg artifacts, watermark, blurry";
 
-// Pony-Modelle brauchen die score-Quality-Tags, sonst wird das Bild matschig.
-const PONY_POSITIVE = "score_9, score_8_up, score_7_up, score_6_up, ";
-const PONY_NEGATIVE =
-  "score_6, score_5, score_4, " + DEFAULT_NEGATIVE;
-
-// Pony-Checkpoint erkennen (Model-ID 257749), um Tags automatisch zu setzen.
-const isPony = (model) => model.includes("257749");
+// Extrahiert die Bild-URL aus einer Workflow-Antwort.
+function extractImageUrl(data) {
+  const step = data?.steps?.find((s) => s?.output?.images?.length);
+  return step?.output?.images?.[0]?.url;
+}
 
 export const data = new SlashCommandBuilder()
   .setName("generate")
-  .setDescription("Generiert ein Bild via Civitai AI 🍄")
+  .setDescription("Generiert ein Bild via Qwen-Image (Civitai) 🍄")
   .addStringOption((opt) =>
     opt
       .setName("prompt")
-      .setDescription("Was soll Teemo malen? (Englisch funktioniert am besten)")
+      .setDescription("Was soll Teemo malen? (Qwen versteht auch Text im Bild gut)")
       .setRequired(true)
   )
   .addStringOption((opt) =>
@@ -50,15 +44,11 @@ export const data = new SlashCommandBuilder()
     opt
       .setName("negativ")
       .setDescription("Was soll NICHT im Bild sein? (optional)")
-  )
-  .addStringOption((opt) =>
-    opt
-      .setName("modell")
-      .setDescription("Civitai Model-URN (optional, für Profis)")
   );
 
 export async function execute(interaction) {
-  if (!process.env.CIVITAI_API_TOKEN) {
+  const token = process.env.CIVITAI_API_TOKEN;
+  if (!token) {
     await interaction.reply({
       content:
         "❌ Genosse, der Civitai-Schlüssel fehlt im Kollektiv. Setze `CIVITAI_API_TOKEN` in der `.env`.",
@@ -69,76 +59,87 @@ export async function execute(interaction) {
 
   await interaction.deferReply();
 
-  const userPrompt = interaction.options.getString("prompt");
-  const userNegative = interaction.options.getString("negativ");
+  const prompt = interaction.options.getString("prompt");
+  const negativePrompt = interaction.options.getString("negativ") ?? DEFAULT_NEGATIVE;
   const formatKey = interaction.options.getString("format") ?? "quadrat";
-  const model = interaction.options.getString("modell") ?? DEFAULT_MODEL;
   const { width, height } = FORMATS[formatKey] ?? FORMATS.quadrat;
 
-  // Bei Pony-Modellen die score-Quality-Tags voranstellen und einen
-  // Pony-tauglichen Negative-Prompt nutzen (sofern der User keinen vorgibt).
-  const pony = isPony(model);
-  const prompt = pony ? PONY_POSITIVE + userPrompt : userPrompt;
-  const negativePrompt =
-    userNegative ?? (pony ? PONY_NEGATIVE : DEFAULT_NEGATIVE);
+  const body = {
+    steps: [
+      {
+        $type: "imageGen",
+        input: {
+          engine: "sdcpp",
+          ecosystem: "qwen",
+          model: "20b",
+          operation: "createImage",
+          version: "latest",
+          prompt,
+          negativePrompt,
+          width,
+          height,
+          cfgScale: 2.5, // Qwen will ~2.5, nicht 7 wie SDXL
+          steps: 20,
+        },
+      },
+    ],
+  };
 
-  const input = {
-    model,
-    params: {
-      prompt,
-      negativePrompt,
-      scheduler: Scheduler.EULER_A,
-      steps: pony ? 28 : 25,
-      cfgScale: pony ? 6 : 7,
-      width,
-      height,
-      clipSkip: 2,
-      seed: -1,
-    },
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   };
 
   try {
-    // Job einreichen OHNE auf das SDK-interne Polling zu warten (das pollt nur
-    // alle 30s / 10min und verschluckt Fehler). Wir pollen selbst – schneller
-    // und mit klaren Fehlermeldungen.
-    const response = await civitai.image.fromText(input, false);
-    const token = response?.token;
+    // Job einreichen, bis zu 60s direkt warten.
+    const res = await fetch(
+      `${ORCHESTRATION}/v2/consumer/workflows?wait=60`,
+      { method: "POST", headers, body: JSON.stringify(body) }
+    );
 
-    if (!token) {
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Qwen Submit-Fehler:", res.status, text);
+      const hint =
+        res.status === 401 || res.status === 403
+          ? " (Token ungültig oder ohne Generierungs-Rechte)"
+          : res.status === 402
+          ? " (nicht genug Buzz)"
+          : "";
       await interaction.editReply(
-        "❌ Civitai hat keinen Job angenommen, Genosse. (kein Token) – Token/Buzz prüfen."
+        `❌ Civitai hat den Auftrag abgelehnt, Genosse. HTTP ${res.status}${hint}`
       );
       return;
     }
 
-    // Selbst pollen: alle 4s, bis zu ~3 Minuten.
-    // Achtung: result ist ein ARRAY ([{ blobKey, available, blobUrl, seed }]).
-    // blobUrl erscheint erst, wenn available === true.
-    let blobUrl;
-    const maxTries = 45;
-    for (let i = 0; i < maxTries; i++) {
-      await new Promise((r) => setTimeout(r, 4000));
+    let data = await res.json();
+    let imageUrl = extractImageUrl(data);
 
-      const status = await civitai.jobs.getByToken(token);
-      const job = status?.jobs?.[0];
-      const item = Array.isArray(job?.result) ? job.result[0] : job?.result;
-      blobUrl = item?.blobUrl;
-
-      if (blobUrl) break;
-
-      // Job fehlgeschlagen: nicht mehr eingeplant, kein Ergebnis verfügbar
-      if (job && job.scheduled === false && item?.available !== true) {
-        console.error("Civitai Job nicht eingeplant:", JSON.stringify(status));
-        await interaction.editReply(
-          "❌ Der Job wurde abgelehnt, Genosse. Meist liegt das am Model (nicht für Generierung verfügbar) oder an fehlendem Buzz. Probier ein anderes `modell` oder lade Buzz auf."
+    // Falls nach wait=60 noch nicht fertig: per Workflow-ID nachpollen.
+    const workflowId = data?.id ?? data?.workflowId;
+    if (!imageUrl && workflowId) {
+      for (let i = 0; i < 30 && !imageUrl; i++) {
+        await new Promise((r) => setTimeout(r, 4000));
+        const poll = await fetch(
+          `${ORCHESTRATION}/v2/consumer/workflows/${workflowId}`,
+          { headers }
         );
-        return;
+        if (!poll.ok) continue;
+        data = await poll.json();
+        imageUrl = extractImageUrl(data);
+        if (data?.status === "failed") {
+          console.error("Qwen Workflow failed:", JSON.stringify(data));
+          await interaction.editReply(
+            "❌ Der Qwen-Job ist fehlgeschlagen, Genosse. Versuch es erneut."
+          );
+          return;
+        }
       }
     }
 
-    if (!blobUrl) {
+    if (!imageUrl) {
       await interaction.editReply(
-        "🍄 Das Bild ist noch in den Pilzwäldern verschollen, Genosse... (Zeitüberschreitung nach 3 Minuten). Versuch es erneut."
+        "🍄 Das Bild ist noch in den Pilzwäldern verschollen, Genosse... (Zeitüberschreitung). Versuch es erneut."
       );
       return;
     }
@@ -149,14 +150,14 @@ export async function execute(interaction) {
         name: "Genosse Teemoshenko – Atelier der Revolution 🍄",
         iconURL: "https://ddragon.leagueoflegends.com/cdn/14.1.1/img/champion/Teemo.png",
       })
-      .setDescription(`**Auftrag von ${interaction.user.username}:**\n> ${userPrompt}`)
-      .setImage(blobUrl)
-      .setFooter({ text: `${width}×${height} • Civitai • Hehehe.` })
+      .setDescription(`**Auftrag von ${interaction.user.username}:**\n> ${prompt}`)
+      .setImage(imageUrl)
+      .setFooter({ text: `${width}×${height} • Qwen-Image • Hehehe.` })
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
   } catch (err) {
-    console.error("Civitai Fehler:", err);
+    console.error("Qwen Fehler:", err);
     await interaction.editReply(
       `❌ Das Bild konnte nicht erzeugt werden, Genosse.\n\`${err.message ?? err}\``
     );
